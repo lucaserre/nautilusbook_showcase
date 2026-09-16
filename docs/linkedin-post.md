@@ -4,7 +4,7 @@ Eu comecei querendo criar um diário de livros.
 
 Acabei estudando, na prática, por que “funciona na minha máquina” está muito longe de significar “está seguro”.
 
-O projeto se chama **NautilusBook**.
+Se trata do meu SaaS: **NautilusBook**.
 
 A ideia inicial era simples: registrar leituras, notas e anotações por uma conversa no WhatsApp, usando uma IA rodando localmente.
 
@@ -36,7 +36,7 @@ O desenvolvimento é **assistido por IA**. Uso o ChatGPT como apoio de implement
 
 Como o NautilusBook pode se tornar um produto comercial, o core permanece privado. Em vez de abrir o SaaS inteiro, publiquei um **engineering & security showcase** com arquitetura, threat model, decisões de AppSec, estratégia de testes e aprendizados técnicos.
 
-[LINK DO SHOWCASE]
+https://github.com/lucaserre/nautilusbook_showcase
 
 Se você trabalha com AppSec, segurança ofensiva/defensiva ou engenharia de software, tenho uma pergunta:
 
