@@ -1,0 +1,21 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Accidental local data
+.env
+.env.*
+*.log
+*.dump
+*.sql
+*.sqlite*
+backups/
+.sessions/
+secrets/
+
+# Archives generated locally
+*.zip
+*.tar
+*.tar.gz
