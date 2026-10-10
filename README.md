@@ -1,155 +1,181 @@
-# NautilusBook — Engineering & Security Showcase
+# Pelagium — Engineering & Security Showcase
 
-> A security-conscious, self-hosted book journal that can be updated through natural-language conversations on WhatsApp using a local LLM.
+> Um diário pessoal de leitura com frontend web, journal personalizável, autenticação, operações de privacidade e integração conversacional por WhatsApp.
 
-**Status:** active development · private commercial product · public engineering case study
+**Status:** desenvolvimento ativo · produto privado · beta fechado em preparação · showcase público de engenharia
 
-This repository is **not** the NautilusBook product source code. It is a public showcase of the architecture, security decisions, threat model, engineering lessons, and validation strategy behind the project.
+Este repositório **não contém o código-fonte privado do Pelagium**. Ele documenta arquitetura, decisões de segurança, threat modeling, estratégia de testes, aprendizados e evolução operacional do projeto.
 
-The private product is being developed as a potential SaaS. The purpose of this repository is to document the engineering work without publishing the commercial core.
+O produto começou como **NautilusBook** e foi rebatizado como **Pelagium** durante a preparação para o beta privado. O slug deste repositório ainda preserva o nome histórico.
 
-## Why NautilusBook exists
+## O que é o Pelagium
 
-The original idea was simple: keep a personal reading journal and update it naturally through WhatsApp.
+Pelagium é um diário de leitura pessoal. A interface web permite:
 
-A user should be able to write things such as:
+- organizar livros e releituras;
+- acompanhar progresso;
+- escrever resenhas, notas e citações;
+- avaliar leituras;
+- personalizar o journal;
+- manter histórico de sessões;
+- gerenciar conta, segurança, exportação e exclusão.
 
-- “I started reading Dune today.”
-- “I’m on page 120.”
-- “I finished it. Rating: 5/5.”
-- “What did I write about Dune?”
+O WhatsApp funciona como canal de captura conversacional. A integração original usa WAHA em desenvolvimento e está sendo migrada para a **WhatsApp Business Platform / Cloud API oficial**.
 
-Turning that into a reliable system quickly became more than an LLM integration. The project had to deal with webhook authenticity, retries, idempotency, identity resolution, conversational ambiguity, asynchronous processing, authorization, session revocation, file-upload security, data lifecycle, backups, and deployment hardening.
-
-That evolution is the main subject of this repository.
-
-## Architecture at a glance
+## Arquitetura atual
 
 ```mermaid
 flowchart LR
-    U[User] -->|WhatsApp message| W[WAHA]
-    W -->|HMAC-authenticated webhook| API[FastAPI]
+    USER[Leitor] -->|HTTPS| EDGE[Caddy / TLS]
+    EDGE --> WEB[React / TypeScript]
+    EDGE --> API[FastAPI]
+
+    META[WhatsApp Cloud API<br/>migração em andamento] -->|Webhook assinado| API
+    WAHA[WAHA<br/>provider de transição] -->|Webhook HMAC| API
+
+    API --> DB[(PostgreSQL)]
+    API --> MEDIA[(Media Storage)]
     API --> Q[(Persistent Inbox)]
-    Q --> WK[Worker]
-    WK --> AI[Ollama / Qwen3]
-    AI -->|Structured plan| V[Validation + Domain Rules]
-    V --> DB[(PostgreSQL)]
-    V --> W
 
-    WEB[Future Web Frontend] -->|Structured API| API
-    API --> DB
+    Q --> WORKER[Worker]
+    WORKER --> LLM[Ollama / Qwen3]
+    WORKER --> DB
 
-    API --> MEDIA[(Self-hosted Media Storage)]
+    WORKER --> PROVIDER[WhatsApp Provider]
+    PROVIDER --> META
+    PROVIDER --> WAHA
 ```
 
-The LLM is **not** treated as an authority. Natural-language output is converted into a structured plan, normalized, validated, and only then passed to domain services.
+O domínio não depende do transporte de WhatsApp escolhido. O worker publica por uma interface de provider, permitindo coexistência temporária entre WAHA e Cloud API durante a migração.
 
-## Security-oriented design
+## Estado de validação
 
-Selected controls implemented during development include:
+### Baseline estável — v0.15.5
 
-- HMAC-authenticated WhatsApp webhooks;
-- idempotent webhook processing and persistent inbox state;
-- asynchronous worker instead of long-running webhook execution;
-- chat-level leases to avoid concurrent processing of the same conversation;
-- separation of WhatsApp LID identity from phone numbers;
-- structured LLM outputs with deterministic post-validation;
-- explicit ambiguity handling instead of silently changing the wrong book;
-- access tokens + rotating refresh tokens + revocable sessions;
-- refresh-token replay detection;
-- Argon2 password hashing and rehash support;
-- login/token request throttling;
-- per-user authorization boundaries;
-- image validation, re-encoding and metadata removal;
-- self-hosted media storage abstraction;
-- account export and deletion workflows;
-- data-retention jobs;
-- backup verification and restore tooling;
-- non-root application containers;
-- local-only administrative ports in development;
-- production profile with reverse proxy, HTTPS, request limits and internal-only services.
+O último baseline mergeado e validado antes da migração oficial do WhatsApp inclui:
 
-See [Threat Model](docs/threat-model.md) and [Security Decisions](docs/security-decisions.md).
+- **234 testes backend**;
+- frontend com `structure-check`, TypeScript typecheck e build de produção;
+- **14 testes operacionais**;
+- pilot gate;
+- production structure gate;
+- Alembic head validado;
+- smoke manual de journal, autenticação e recuperação de senha.
 
-## What was learned by breaking it
+### v0.16 — em andamento
 
-Several important controls exist because tests exposed real failure modes during development:
+A linha v0.16 adiciona:
 
-| Failure observed | Engineering response |
+- abstração de provider para WhatsApp;
+- provider WAHA preservado como transição;
+- sender para Cloud API oficial;
+- webhook oficial com challenge verification;
+- validação `X-Hub-Signature-256` via HMAC-SHA256;
+- deduplicação reaproveitando a inbox existente;
+- configuração provider-aware;
+- testes de entrada/saída da Cloud API.
+
+A migração ainda **não é apresentada como concluída em produção**. App Meta, callback HTTPS real, credenciais permanentes e número definitivo fazem parte da próxima etapa operacional.
+
+## Controles de segurança implementados
+
+Entre os controles presentes no produto privado:
+
+- access token + refresh token rotativo;
+- sessões revogáveis;
+- detecção de reutilização de refresh token;
+- Argon2 para senhas;
+- rate limiting e lockout persistente;
+- política de senha centralizada;
+- confirmação/verificação de e-mail;
+- recuperação de senha com token temporário de uso único;
+- autorização por ownership;
+- testes de IDOR horizontal;
+- optimistic concurrency;
+- proteção CSRF/origin;
+- headers de segurança;
+- request-size limits;
+- upload de imagem validado e reprocessado;
+- HMAC em webhooks;
+- inbox persistente e deduplicação;
+- logs estruturados;
+- backups verificados e restore drill;
+- offsite backup;
+- retenção de dados;
+- workflow de solicitações de privacidade;
+- incident response de privacidade;
+- containers com `no-new-privileges`, `cap_drop` e filesystem read-only onde aplicável;
+- production deployment gate.
+
+Veja [Threat Model](docs/threat-model.md), [Security Decisions](docs/security-decisions.md) e [Security Testing](docs/security-testing.md).
+
+## Privacidade e operação
+
+O projeto inclui fluxos para:
+
+- exportação de dados;
+- exclusão de conta;
+- retenção configurável;
+- privacy requests;
+- registro e tratamento de incidentes;
+- backup local + offsite;
+- restore drill;
+- monitoramento externo;
+- host preflight;
+- deployment gate de produção.
+
+Esses controles não substituem revisão jurídica ou de segurança externa antes de uma escala comercial maior.
+
+## IA no produto
+
+O Pelagium atualmente usa Ollama/Qwen3 para interpretação conversacional local. O modelo **não é autoridade de domínio**: saídas passam por normalização, resolução e regras determinísticas antes de qualquer mutação persistente.
+
+A arquitetura está sendo preparada para reduzir dependência do LLM em operações simples. A direção planejada é **deterministic-first / AI-on-demand**: ações previsíveis devem funcionar sem inferência; IA fica reservada para interpretação ambígua e experiências de companion de leitura.
+
+## Stack
+
+| Área | Tecnologia |
 |---|---|
-| Duplicate WAHA webhook configuration caused repeated deliveries | Removed duplicate source, preserved idempotent processing |
-| WhatsApp `@lid` was initially treated like a phone number | Split messaging identity from resolved phone identity |
-| Retries could duplicate journal writes | Persisted external message identity + idempotency |
-| The LLM sometimes applied an update to the previously active book | Explicit-title precedence + deterministic catalog resolution |
-| One message could describe changes to two books | Replaced single intent with a multi-operation structured plan |
-| Bursts of messages produced fragmented replies | Persistent queue + debounce + deferred consolidated response |
-| `want_to_read` could coexist with actual progress | Domain invariants enforced in service, API and database |
-| A configuration value serialized with the wrong JSON type caused Ollama HTTP 400 responses | Typed normalization + regression test |
-
-More detail: [Engineering Lessons](docs/engineering-lessons.md).
-
-## Validation snapshot
-
-At the milestone represented by this showcase:
-
-- **76 automated tests** passed in the development stack;
-- the real Ollama multi-book/partial-title probe completed **5/5 scenarios**;
-- database migrations were validated against PostgreSQL;
-- pre-migration integrity checks and a verified backup were executed before domain-changing migrations;
-- data-integrity checks passed after migration;
-- a production-oriented hardening profile exists, but public production deployment is **not claimed as complete**.
-
-This repository intentionally avoids claims such as “production-ready” or “100% secure”. The remaining operational work is documented in [Project Status](docs/project-status.md).
-
-## Technology stack
-
-| Area | Technology |
-|---|---|
+| Frontend | React, TypeScript, Vite |
 | API | Python, FastAPI, Pydantic |
-| Persistence | PostgreSQL, SQLAlchemy, Alembic |
-| Local LLM | Ollama + Qwen3 |
-| Messaging | WhatsApp via WAHA |
-| Async processing | PostgreSQL-backed inbox + worker |
-| Authentication | JWT access tokens, rotating refresh tokens, revocable sessions |
+| Persistência | PostgreSQL, SQLAlchemy, Alembic |
+| Processamento assíncrono | Inbox persistente + worker |
+| IA local | Ollama + Qwen3 |
+| WhatsApp | WAHA em transição → Meta Cloud API |
+| Autenticação | JWT + refresh rotation + sessões revogáveis |
 | Password hashing | Argon2 |
-| Media | Validated/re-encoded WebP stored on self-hosted filesystem abstraction |
 | Containers | Docker Compose |
-| Reverse proxy / TLS profile | Caddy |
-| Testing | Pytest + integration probes |
+| Edge/TLS | Caddy |
+| Testes | Pytest, unittest, integration/smoke gates |
 
-## Documentation map
+## Documentação
 
 - [Architecture](docs/architecture.md)
+- [Project Status](docs/project-status.md)
 - [Threat Model](docs/threat-model.md)
 - [Security Decisions](docs/security-decisions.md)
-- [Security Testing Strategy](docs/security-testing.md)
+- [Security Testing](docs/security-testing.md)
 - [Engineering Lessons](docs/engineering-lessons.md)
 - [AI-Assisted Development](docs/ai-assisted-development.md)
 - [Privacy & Data Lifecycle](docs/privacy-data-lifecycle.md)
-- [Self-Hosted Deployment Model](docs/self-hosted-deployment.md)
-- [Project Status & Roadmap](docs/project-status.md)
+- [Self-Hosted Deployment](docs/self-hosted-deployment.md)
 - [Public Disclosure Boundary](docs/public-disclosure-boundary.md)
-- [GitHub Publication Checklist](docs/github-publication-checklist.md)
 - [Screenshot Guide](docs/screenshot-guide.md)
 
-## AI-assisted development disclosure
+## Desenvolvimento assistido por IA
 
-NautilusBook has been developed with extensive AI assistance for implementation, architecture review, debugging, test generation, and documentation.
+Pelagium é desenvolvido com uso intensivo de IA para implementação, refactoring, debugging, revisão arquitetural e documentação.
 
-Product direction, requirements, acceptance criteria, real-environment testing, security decisions, bug reproduction, and final validation are human-directed. Generated code and suggestions are treated as untrusted until tested and reviewed.
+Conceito de produto, requisitos, critérios de aceite, execução dos testes reais, reprodução de bugs, decisões de risco e aprovação final permanecem conduzidos pelo responsável pelo projeto.
 
-See [AI-Assisted Development](docs/ai-assisted-development.md).
+Código e sugestões gerados são tratados como implementação não confiável até sobreviverem aos gates e testes.
 
-## Repository scope and licensing
+Veja [AI-Assisted Development](docs/ai-assisted-development.md).
 
-This is a **portfolio/documentation repository**, not an open-source release of the NautilusBook commercial product.
+## Escopo público
 
-The private application source, production configuration, credentials, user data, prompts, database dumps, WhatsApp sessions and deployment secrets are intentionally excluded.
+Este repositório é um **case study/portfolio**, não uma distribuição open source do produto.
 
-No open-source license for the private NautilusBook product is granted by this repository. See [NOTICE.md](NOTICE.md).
+Código privado, prompts internos, migrations completas, credenciais, dados de usuários, backups, configurações de produção e segredos continuam fora do repositório público.
 
-## Português — resumo
-
-O NautilusBook é um book journal self-hosted em desenvolvimento, com integração via WhatsApp e IA local. Este repositório público documenta arquitetura, threat modeling, decisões de AppSec, testes e aprendizados do projeto, mas **não contém o código-fonte comercial do SaaS**.
-
-A proposta do showcase é demonstrar processo de engenharia e segurança sem abrir o core do produto.
+Veja [NOTICE.md](NOTICE.md).

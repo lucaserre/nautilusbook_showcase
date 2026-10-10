@@ -1,6 +1,6 @@
 # GitHub Publication Checklist
 
-Use this checklist before making `nautilusbook-showcase` public.
+Use this checklist before making `pelagium-showcase` public.
 
 ## 1. Use a separate repository
 
@@ -9,7 +9,7 @@ Do **not** change the private product repository to public.
 Create a new repository such as:
 
 ```text
-nautilusbook-showcase
+pelagium-showcase
 ```
 
 Only push the contents of this showcase directory.
@@ -63,7 +63,7 @@ Also search for your real phone number, personal e-mail if you do not want it pu
 Example:
 
 ```bash
-git commit -m "Initial NautilusBook engineering showcase"
+git commit -m "Initial Pelagium engineering showcase"
 git branch -M main
 ```
 

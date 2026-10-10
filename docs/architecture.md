@@ -2,127 +2,139 @@
 
 ## Design goals
 
-NautilusBook was designed around five goals:
+Pelagium is organized around six goals:
 
-1. **Natural interaction** — users can update a journal through conversational language.
-2. **Deterministic persistence** — an LLM may interpret language, but it must not directly control database writes.
-3. **Failure tolerance** — webhook retries, model latency and duplicate events must not corrupt user state.
-4. **User isolation** — one account must never be able to read or mutate another account’s journal.
-5. **Self-hosted operation** — the system should not require cloud object storage or hosted LLM APIs.
+1. **Personal reading memory** — the journal is the product core.
+2. **Deterministic persistence** — probabilistic components do not bypass domain rules.
+3. **Failure tolerance** — retries, duplicate events and slow inference must not corrupt state.
+4. **User isolation** — ownership is enforced at the application boundary.
+5. **Operational recoverability** — backups must be restorable, not merely created.
+6. **Provider independence** — transport integrations should not leak into domain logic.
 
-## Runtime components
+## Runtime topology
 
 ```mermaid
 flowchart TB
-    subgraph PublicEdge[Public edge - future production]
-        CADDY[Caddy / TLS]
-    end
+    INTERNET((Internet)) --> CADDY[Caddy / TLS]
+    CADDY --> FRONT[React / Vite]
+    CADDY --> API[FastAPI]
 
-    subgraph Application[Application network]
-        API[FastAPI]
-        WORKER[WhatsApp Worker]
-        MAINT[Maintenance Worker]
-        DB[(PostgreSQL)]
-        OLLAMA[Ollama / Qwen3]
-        WAHA[WAHA]
-        MEDIA[(Media Storage)]
-    end
+    API --> DB[(PostgreSQL)]
+    API --> MEDIA[(Media)]
+    API --> INBOX[(WhatsApp Inbox)]
 
-    USER[User] -->|HTTPS / future web UI| CADDY
-    CADDY --> API
-    USER -->|WhatsApp| WAHA
-    WAHA -->|Webhook + HMAC| API
-    API --> DB
-    API --> MEDIA
+    WORKER[Worker] --> INBOX
     WORKER --> DB
-    WORKER --> OLLAMA
-    WORKER --> WAHA
-    MAINT --> DB
+    WORKER --> LLM[Ollama / Qwen3]
+    WORKER --> WP[WhatsApp Provider]
+
+    WP --> WAHA[WAHA - transition]
+    WP --> META[Meta Cloud API]
+
+    META -->|signed webhook| API
+    WAHA -->|HMAC webhook| API
+
+    MAINT[Maintenance] --> DB
 ```
 
-In local development, administrative ports are bound only to `127.0.0.1`. In the production-oriented profile, internal services are not exposed directly to the internet.
+Only the edge should be internet-accessible in production. PostgreSQL, Ollama, API internals and administrative services remain private to the host/container network.
 
-## WhatsApp message lifecycle
+## Web application
+
+The web frontend is no longer a future milestone. It currently includes:
+
+- authentication;
+- library;
+- journal detail;
+- progress/status/rating;
+- reread history;
+- cover management;
+- journal customization;
+- notes, reviews and quotes;
+- statistics;
+- WhatsApp linking/status;
+- account/security/privacy actions.
+
+The frontend performs deterministic operations through structured API calls. It does not need an LLM for ordinary journal interactions.
+
+## WhatsApp lifecycle
 
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant W as WAHA
+    participant P as WhatsApp Provider
     participant A as FastAPI
     participant D as PostgreSQL
     participant K as Worker
     participant L as Local LLM
 
-    U->>W: Natural-language message
-    W->>A: Signed webhook
-    A->>A: Validate HMAC + event
-    A->>D: Persist inbox event / idempotency key
-    A-->>W: Fast acknowledgment
-
-    K->>D: Claim chat lease + pending events
-    K->>K: Debounce / group burst
-    K->>L: Request structured plan
-    L-->>K: 0..N structured operations
-    K->>K: Normalize + resolve book references
-    K->>K: Validate domain invariants
-    K->>D: Commit journal changes
-    K->>W: Consolidated reply
-    W-->>U: Response
+    U->>P: Message
+    P->>A: Authenticated/Signed webhook
+    A->>D: Persist inbox event + idempotency key
+    A-->>P: Fast acknowledgment
+    K->>D: Claim pending events
+    K->>L: Interpret when needed
+    L-->>K: Structured plan
+    K->>K: Normalize + resolve + validate
+    K->>D: Commit allowed mutations
+    K->>P: Consolidated reply
+    P-->>U: Response
 ```
 
-The webhook does not wait for model inference. This reduces coupling between WhatsApp retry behavior and LLM latency.
+WAHA and Meta Cloud API are adapters around the same internal message lifecycle.
 
 ## LLM boundary
 
-The LLM is treated as an interpreter, not as a database agent.
+The LLM is an interpreter, not a database agent.
 
 ```mermaid
 flowchart LR
     TXT[User text] --> LLM[LLM]
-    LLM --> PLAN[Structured Plan]
+    LLM --> PLAN[Structured plan]
     PLAN --> NORM[Normalization]
-    NORM --> RESOLVE[Catalog / Context Resolution]
-    RESOLVE --> RULES[Domain Rules]
-    RULES --> DB[(Database)]
+    NORM --> RESOLVE[Context/catalog resolution]
+    RESOLVE --> RULES[Domain rules]
+    RULES --> DB[(PostgreSQL)]
 ```
 
-Examples of deterministic logic after the model:
+Authorization, ownership, progress invariants, concurrency and catalog decisions remain deterministic.
 
-- exact book matches take priority;
-- partial titles are resolved against books already present in the user’s journal;
-- ambiguous references are rejected instead of guessed;
-- progress and status invariants are enforced independently of model output;
-- multiple operations are supported in one message;
-- a previously active title cannot silently override a title explicitly named by the user.
+## Authentication boundary
 
-## Identity model
+Browser authentication uses:
 
-WhatsApp may identify a user through an opaque `@lid` rather than a phone number. NautilusBook therefore models messaging identity separately from resolved phone identity.
+- short-lived access token;
+- rotating refresh token;
+- HttpOnly refresh cookie;
+- persisted/revocable sessions;
+- replay detection;
+- password-change session invalidation.
 
-This prevents an opaque WhatsApp identifier from being incorrectly persisted or authorized as if it were a phone number.
+Password reset and e-mail verification use expiring single-use tokens.
 
-## Web and WhatsApp share the same domain
+## Privacy and operational boundary
 
-The future web client will not “talk to the LLM” for deterministic operations.
+The production-oriented architecture includes:
 
-```mermaid
-flowchart LR
-    WEB[Web UI] -->|Structured request| DOMAIN[Journal Domain Services]
-    WA[WhatsApp] --> NLP[NL Interpretation]
-    NLP --> DOMAIN
-    DOMAIN --> DB[(PostgreSQL)]
-```
+- verified backup manifests;
+- restore drills;
+- offsite copies;
+- external health monitoring;
+- host preflight;
+- production safety checks;
+- retention jobs;
+- privacy-request history;
+- incident-response records.
 
-This keeps business rules consistent regardless of client.
+## Deliberately omitted publicly
 
-## Deliberately omitted from this public repository
+The showcase does not expose:
 
-The public showcase does not expose:
-
-- private application source code;
+- private application source;
 - production prompts;
-- complete database schema/migrations;
-- internal deployment values;
-- secrets, credentials or sessions;
-- user data or backups;
-- proprietary product roadmap details.
+- complete migrations/schema;
+- real infrastructure values;
+- credentials/tokens;
+- user data;
+- backups;
+- commercial roadmap details that are not necessary to explain the engineering.

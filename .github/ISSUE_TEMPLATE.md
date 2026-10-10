@@ -1,6 +1,6 @@
 ---
 name: Documentation / architecture feedback
-about: Suggest an improvement to the public NautilusBook engineering showcase
+about: Suggest an improvement to the public Pelagium engineering showcase
 title: ""
 labels: ""
 assignees: ""

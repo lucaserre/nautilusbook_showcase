@@ -1,95 +1,94 @@
 # Security Testing Strategy
 
-NautilusBook security validation combines automated tests, integration probes, manual runtime testing and operational checks.
+Pelagium security validation combines automated tests, integration probes, manual runtime testing and operational gates.
 
-## Current validation layers
+## Current stable validation snapshot
 
-### Unit and service tests
+At the v0.15.5 stable baseline:
 
-Automated tests cover areas such as:
+- **234 backend tests** pass;
+- frontend `structure-check` passes;
+- TypeScript typecheck passes;
+- production frontend build passes;
+- **14 operational unittest cases** pass;
+- pilot gate passes;
+- production structure gate passes;
+- Alembic current/head checks pass;
+- critical auth/journal flows have been smoke-tested manually.
+
+The v0.16 WhatsApp Cloud API branch adds additional provider/webhook tests while the official integration is still in progress.
+
+## Coverage areas
+
+Automated tests currently exercise areas including:
 
 - authentication-session lifecycle;
-- refresh-token rotation/reuse behavior;
-- webhook HMAC verification;
-- WhatsApp allowlist/account linking;
-- LID identity normalization;
+- refresh rotation/reuse;
+- password policy;
+- password reset and verification tokens;
+- authorization/ownership boundaries;
+- horizontal IDOR cases;
+- optimistic concurrency;
+- malformed/boundary contracts;
+- webhook HMAC/signature validation;
+- WhatsApp allowlist/linking;
+- message deduplication;
 - journal state transitions;
-- multi-book plans;
-- title resolution and partial-title recovery;
-- image validation;
+- rereads;
+- page-count/edition behavior;
+- metadata editing isolation;
+- journal decorations/templates/freeform state;
+- XSS-preservation cases;
+- library/statistics aggregation;
+- image handling;
 - HTTP security controls;
 - queue/debounce behavior;
-- Ollama request configuration.
+- observability and route topology.
 
-At the milestone documented here, **76 automated tests** were passing.
+## LLM probes
 
-### Real LLM probes
+Synthetic tests do not prove model behavior. Real Ollama probes are used for conversational scenarios such as:
 
-Synthetic unit tests cannot guarantee model behavior. Real Ollama probes are therefore executed against the local Qwen model.
-
-Representative scenarios include:
-
-- multiple book updates in one sentence;
+- multi-book operations;
 - partial-title resolution;
-- contextual references without repeating the title;
-- deliberate ambiguity that must fail closed.
+- contextual references;
+- deliberate ambiguity.
 
-The latest validation completed **5/5 real probe scenarios**.
+The LLM is not trusted to enforce authorization or persistence invariants.
 
-### Migration and integrity testing
+## Migration/integrity validation
 
-For schema-changing releases, the process includes:
+Schema-changing releases use:
 
-1. read-only preflight;
+1. preflight;
 2. verified backup;
 3. Alembic migration;
-4. post-migration integrity script;
-5. application test suite.
+4. integrity checks;
+5. automated suite;
+6. smoke/manual gates when behavior changes.
 
-Examples of invariants checked after migration:
+## Operational validation
 
-- a `want_to_read` item cannot contain real progress;
-- completed readings must be represented consistently;
-- reread numbering cannot collide;
-- normalized email uniqueness is preserved;
-- progress must not exceed a known edition page count.
-
-### Operational validation
-
-The deployment tooling includes checks for:
+Operational tooling covers:
 
 - backup manifest integrity;
-- database dump readability;
-- media archive structure;
-- production configuration preflight;
-- expected Alembic head;
-- safe environment configuration.
-
-## Planned AppSec test phase
-
-The frontend milestone will be followed by a dedicated application-security pass.
-
-Priority areas:
-
-1. **Authorization / IDOR** — manipulate reading, note, image and account identifiers across two users.
-2. **Authentication** — refresh races, session revocation, password-reset abuse and cookie handling.
-3. **Input validation** — malformed JSON, boundary values and oversized requests.
-4. **Upload security** — polyglots, corrupt images, decompression bombs and metadata cases.
-5. **Webhook abuse** — replay, forged HMACs, burst traffic and duplicate delivery.
-6. **LLM safety** — prompt injection, context poisoning and attempts to generate unauthorized plans.
-7. **Rate limiting** — bypass attempts through header/IP handling.
-8. **Deployment** — exposed ports, TLS configuration, container privileges and secret leakage.
-9. **Dependency/image review** — package and container vulnerability scanning.
-10. **Restore drill** — prove that a backup can restore the service into a clean environment.
+- dump/archive verification;
+- restore drill;
+- offsite backup/revalidation;
+- host preflight;
+- external monitoring;
+- production configuration safety;
+- container exposure/hardening;
+- expected Alembic state.
 
 ## Testing philosophy
 
-Passing tests does not mean the application is “secure”. Tests are evidence for specific assumptions.
+Passing tests is evidence for specific assumptions, not proof that the product is “secure”.
 
-Whenever production behavior contradicts an assumption, the preferred response is:
+The preferred loop is:
 
 ```text
-observe → reproduce → add regression → fix deterministically → retest
+observe → reproduce → regression test → deterministic fix → retest
 ```
 
-This process is visible throughout the project’s engineering history.
+This pattern has repeatedly driven the architecture of the project.

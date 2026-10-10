@@ -1,6 +1,6 @@
 # Engineering Lessons
 
-NautilusBook became substantially more interesting when real tests invalidated apparently reasonable assumptions.
+Pelagium became substantially more interesting when real tests invalidated apparently reasonable assumptions.
 
 ## 1. A successful HTTP integration can still be configured twice
 

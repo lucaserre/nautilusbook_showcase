@@ -1,6 +1,6 @@
 # Security Decisions
 
-This document records selected security and architecture decisions that materially changed NautilusBook during development.
+This document records selected security and architecture decisions that materially changed Pelagium during development.
 
 ## SD-01 — The LLM is not a database agent
 

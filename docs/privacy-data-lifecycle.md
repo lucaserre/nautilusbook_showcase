@@ -1,6 +1,6 @@
 # Privacy & Data Lifecycle
 
-NautilusBook handles personal reading data and messaging identifiers. Privacy requirements are therefore part of the backend design rather than a future UI-only concern.
+Pelagium handles personal reading data and messaging identifiers. Privacy requirements are therefore part of the backend design rather than a future UI-only concern.
 
 ## Data categories
 

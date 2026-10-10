@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for the interest in NautilusBook.
+Thank you for the interest in Pelagium.
 
 This repository is a public engineering showcase for a privately developed commercial product. It is **not** the open-source source tree of the application.
 

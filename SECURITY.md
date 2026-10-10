@@ -2,11 +2,11 @@
 
 ## Scope
 
-This repository contains public engineering documentation for NautilusBook. The commercial product source code and production infrastructure are private.
+This repository contains public engineering documentation for Pelagium. The commercial product source code and production infrastructure are private.
 
 ## Reporting a security issue
 
-Please **do not open a public GitHub issue** for a suspected vulnerability affecting the NautilusBook product or private infrastructure.
+Please **do not open a public GitHub issue** for a suspected vulnerability affecting the Pelagium product or private infrastructure.
 
 Preferred reporting channels:
 
