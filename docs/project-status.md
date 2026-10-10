@@ -2,68 +2,82 @@
 
 ## Current stage
 
-NautilusBook currently has a mature backend foundation and is moving into frontend development.
+Pelagium is preparing for a **closed private beta**.
 
-The backend is suitable for continued integration work and controlled testing. It is **not presented as a fully production-ready public SaaS** yet.
+The web product, authentication flows, journal experience, privacy workflows, operational tooling and production-oriented deployment profile are already implemented and have passed the current local validation gates.
 
-## Completed backend capabilities
+The next milestone is no longer “build the frontend”. It is **real deployment + official WhatsApp integration + first external readers**.
 
-- account registration/authentication;
-- revocable sessions and rotating refresh tokens;
-- journal CRUD and domain invariants;
-- rereads;
-- optional ISBN/edition metadata;
-- notes, ratings and progress;
-- personalized cover upload;
-- WhatsApp account linking;
-- WhatsApp queue/worker processing;
-- multi-book natural-language operations;
-- partial-title/catalog resolution;
-- local LLM integration;
-- backup/verification tooling;
+## Stable baseline — v0.15.5
+
+Validated before the official WhatsApp migration:
+
+- React/TypeScript/Vite frontend;
+- FastAPI/PostgreSQL backend;
+- registration/login/email verification/password reset;
+- rotating refresh tokens and revocable sessions;
+- journal CRUD, rereads, progress, ratings and notes;
+- editable title/author/page metadata;
+- personalized journal appearance and decorations;
+- cover upload/removal;
+- library and statistics views;
 - account export/deletion;
-- retention maintenance;
-- production-oriented container hardening.
+- privacy-request workflow;
+- privacy-incident workflow;
+- retention tooling;
+- backup verification and restore drill;
+- offsite backup/recovery automation;
+- external monitoring;
+- production host preflight;
+- production deployment gate;
+- **234 backend tests**;
+- frontend structure/type/build gates;
+- **14 operational tests**.
 
-## Next product milestone — frontend v1
+## v0.16 — official WhatsApp migration
 
-Planned first frontend scope:
+In progress:
 
-1. registration and login;
-2. journal dashboard;
-3. reading status/progress controls;
-4. book details and notes;
-5. reread history;
-6. cover management;
-7. WhatsApp linking/status;
-8. account/security settings;
-9. export/delete workflows.
+- provider abstraction;
+- WAHA retained temporarily;
+- Meta Cloud API sender;
+- official webhook route;
+- webhook challenge verification;
+- HMAC-SHA256 signature validation;
+- provider-specific production configuration;
+- migration runbook.
 
-## Security milestone after the frontend
+Not yet claimed complete:
 
-The frontend will make several classes of authorization and browser-security testing meaningful for the first time.
+- real public callback validation;
+- permanent Meta credentials;
+- final production phone number;
+- WAHA removal.
 
-Planned AppSec phase:
+## Private beta sequence
 
-- horizontal IDOR testing;
-- cookie/session behavior;
-- CSRF review based on final browser architecture;
-- CSP design;
-- XSS testing;
-- upload attack corpus;
-- rate-limit bypass;
-- LLM prompt-injection/abuse testing;
-- dependency and container scanning;
-- real staging deployment review.
+1. refresh public showcase and recruitment copy;
+2. buy/confirm domain;
+3. recruit the first qualified readers;
+4. provision VPS;
+5. deploy production stack;
+6. validate HTTPS, SMTP, backups and monitoring;
+7. complete the real Meta webhook test;
+8. onboard 5–10 readers;
+9. expand gradually to 20–50 if activation/return signals justify it;
+10. use real behavior to decide what to build next.
 
-## Before public beta
+## AI direction
 
-- successful restore drill in a clean environment;
-- production host/firewall validation;
-- HTTPS + DNS;
-- real SMTP delivery;
-- off-host backups;
-- monitoring/alerting;
-- vulnerability scanning;
-- documented incident/secret-rotation process;
-- final privacy and terms documentation.
+The current conversational path uses a local LLM. A future architecture milestone will reduce infrastructure pressure by making core journal actions deterministic-first and using AI only where natural-language interpretation or reading-companion behavior adds value.
+
+## What is not claimed
+
+Pelagium is not presented as:
+
+- “100% secure”;
+- ready for hundreds/thousands of users without operational evolution;
+- proven commercially;
+- running a completed official WhatsApp production integration.
+
+The point of the project is to turn those assumptions into measurable operational evidence rather than marketing claims.
