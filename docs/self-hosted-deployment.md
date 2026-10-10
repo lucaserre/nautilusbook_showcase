@@ -1,60 +1,66 @@
 # Self-Hosted Deployment Model
 
-NautilusBook is intentionally designed so that the product does not require AWS, GCloud or paid object storage.
-
-This document describes the intended model at a high level. It is not a copy of the private production configuration.
+Pelagium is designed to run on a single hardened VPS during the private-beta stage without requiring AWS/GCP or hosted object storage.
 
 ## Development
 
-The current development environment runs through Docker Compose on a local machine.
+Local development uses Docker Compose with administrative ports bound to loopback where possible.
 
-Administrative services are reachable only through loopback bindings (`127.0.0.1`) rather than all network interfaces.
-
-## Future production topology
+## Production-oriented topology
 
 ```mermaid
 flowchart TB
-    NET((Internet)) --> RP[Reverse Proxy / HTTPS]
-    RP --> API[Application API]
+    NET((Internet)) --> RP[Caddy / HTTPS]
+    RP --> FRONT[Frontend]
+    RP --> API[FastAPI]
+
     API --> DB[(PostgreSQL)]
-    API --> MEDIA[(Local / Mounted Media Storage)]
+    API --> MEDIA[(Media)]
     WORKER[Worker] --> DB
     WORKER --> LLM[Ollama]
-    WAHA[WAHA] --> API
+    WORKER --> WAP[WhatsApp Provider]
+
+    META[Meta Cloud API] --> API
+    WAP --> META
+
+    BACKUP[Backup / Offsite] --> DB
+    MON[External Monitor] --> RP
 ```
 
-Only the public edge should be internet-accessible. Database, LLM and application-internal services remain private to the container/host network.
+Internal services are not meant to be directly exposed to the internet.
 
-## Self-hosted media
+## Current operational tooling
 
-Uploaded covers can live on storage owned by the operator, for example a mounted filesystem on a dedicated server.
+The private repository includes:
 
-Required operational controls include:
+- Linux/host preflight;
+- Docker/Compose validation;
+- firewall/time-sync checks;
+- external health monitoring;
+- local backup verification;
+- offsite backup synchronization;
+- restore/recovery drill;
+- production deployment gate;
+- container hardening checks.
 
-- filesystem permissions;
-- storage usage monitoring;
-- backups to a different disk/host;
-- tested restore procedure;
-- deletion integration with account lifecycle.
+## WhatsApp migration
+
+WAHA is retained temporarily for transition/testing. The target production channel is the official Meta WhatsApp Cloud API.
+
+The production callback is expected to be served behind the same Caddy edge as the application.
 
 ## Email
 
-The backend is provider-neutral and can use standard SMTP.
+Development can log e-mail delivery. Public beta requires a real SMTP transport for verification/reset links.
 
-Development does not require a real SMTP server. Public production does, because password-reset and verification links must not be emitted to logs.
+## Production claim boundary
 
-Self-hosting mail is possible but introduces deliverability requirements such as SPF, DKIM, DMARC and reverse DNS. That is an operational decision, not an application dependency.
+The architecture and gates are prepared for real deployment, but this showcase does not claim that a production deployment is complete until:
 
-## Production is not claimed yet
-
-The product has a production-oriented deployment profile and security preflight, but a real public deployment still requires:
-
-- Linux host hardening;
-- DNS and TLS validation;
-- SMTP validation;
-- firewall policy;
-- external/off-host backup;
-- restore drill;
-- monitoring and alerting;
-- dependency/container vulnerability review;
-- application-security testing after the frontend exists.
+- a real VPS is provisioned;
+- DNS/TLS are verified;
+- SMTP works externally;
+- offsite backup and restore drill pass on the host;
+- external monitoring is live;
+- Cloud API webhook/send flow is validated end-to-end;
+- the production gate passes against the real environment.
