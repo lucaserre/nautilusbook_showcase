@@ -1,81 +1,62 @@
 # Screenshot Guide
 
-Screenshots can make the showcase much stronger, but only if they are sanitized.
+Screenshots strengthen the showcase only when they reflect the current Pelagium experience and contain no private data.
 
 ## Recommended screenshots
 
-### 1. Docker stack
+### 1. Journal page
 
-Show containers running, preferably with only generic service names visible.
+Show a synthetic book with:
 
-Good signal:
+- progress/status;
+- review;
+- quote/note;
+- journal customization;
+- no personal identifiers.
 
-- API;
-- PostgreSQL;
-- WAHA;
-- Ollama;
-- worker;
-- maintenance process.
+This is the strongest product screenshot.
 
-Avoid showing environment variables or mounted secret paths.
+### 2. Library/dashboard
 
-### 2. Swagger / API documentation
+Show the current library, reading state and search/add-book flow.
 
-Use a synthetic local account and show a small portion of the API surface.
+### 3. Statistics
 
-Good candidates:
-
-- journal endpoints;
-- authentication/session endpoints;
-- account export/delete endpoint names.
-
-Do not show tokens in the authorization dialog.
-
-### 3. WhatsApp demo
-
-Use a dedicated/synthetic contact if possible.
-
-Example conversation:
-
-```text
-User: I started reading Dune.
-User: I'm on page 120.
-User: Update Dune to 130 and Foundation to 50.
-NautilusBook: [sanitized successful response]
-```
-
-Blur/hide:
-
-- phone numbers;
-- profile photos;
-- unrelated chats;
-- timestamps if they reveal private context.
+Use synthetic reading data and ensure the Pelagium brand is visible.
 
 ### 4. Architecture diagram
 
-GitHub renders the Mermaid diagrams in this repository. A screenshot of the rendered architecture can also be used on LinkedIn.
+Use the current diagram from `docs/architecture.md`, including the provider boundary for WhatsApp.
 
-### 5. Security/testing evidence
+### 5. Test/gate evidence
 
-A terminal screenshot with:
-
-```text
-76 passed
-```
-
-and a sanitized:
+A terminal screenshot may show sanitized results such as:
 
 ```text
-Result: 5/5 scenarios passed
+234 passed
 ```
 
-is useful evidence without publishing private code.
+for the stable v0.15.5 backend baseline, plus frontend/ops gates.
 
-## Suggested LinkedIn carousel order
+Do not present an in-progress v0.16 count as a stable merged baseline until that release is closed.
 
-1. NautilusBook title / one-line product concept;
-2. architecture diagram;
-3. WhatsApp demo;
-4. security controls / threat model summary;
-5. test result screenshot;
-6. “What broke and what I learned” summary.
+### 6. WhatsApp
+
+Only use synthetic/test-number conversations. Hide:
+
+- personal phone numbers;
+- profile pictures;
+- access tokens;
+- WABA/Phone Number IDs when unnecessary;
+- unrelated chats.
+
+## Suggested LinkedIn carousel
+
+1. Pelagium + one-line value proposition;
+2. journal screenshot;
+3. library/dashboard;
+4. statistics or personalization;
+5. architecture/security snapshot;
+6. beta invitation + form link.
+
+For the current recruitment post, product screenshots are more important than terminal screenshots.
