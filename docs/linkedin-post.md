@@ -1,45 +1,25 @@
-# LinkedIn Post Draft
+# LinkedIn Post — Private Beta Recruitment
 
-Eu comecei querendo criar um diário de livros.
+Se você gosta de leitura — ou mesmo lê só de vez em quando — essa oportunidade pode ser para você.
 
-Acabei estudando, na prática, por que “funciona na minha máquina” está muito longe de significar “está seguro”.
+Estou desenvolvendo o **Pelagium**, uma plataforma web que funciona como um diário pessoal de leitura.
 
-Se trata do meu SaaS: **NautilusBook**.
+A ideia é ter um lugar para organizar o que você lê e guardar a memória dessas leituras: acompanhar progresso, escrever resenhas, salvar citações e anotações, avaliar livros e personalizar o seu diário.
 
-A ideia inicial era simples: registrar leituras, notas e anotações por uma conversa no WhatsApp, usando uma IA rodando localmente.
+O projeto ainda não foi lançado publicamente. Estou formando agora o primeiro grupo de leitores para um **beta fechado e gratuito**, justamente para entender como a experiência funciona fora do meu próprio uso e o que realmente faz sentido melhorar antes de abrir para mais pessoas.
 
-Mas os testes começaram a mostrar problemas muito mais interessantes do que a feature em si.
+Então, se você lê e gosta de manter suas leituras organizadas — ou gostaria de começar a fazer isso de uma forma mais pessoal — estou procurando testers para essa primeira fase do Pelagium.
 
-Um webhook duplicado gerava entregas repetidas. O WhatsApp passou a identificar alguns usuários por `@lid`, e tratar aquilo como telefone criou um problema de identidade. Retries exigiram idempotência. O contexto da IA chegou a aplicar alterações no livro errado. Uma única mensagem podia falar de dois livros. Uploads precisavam ser tratados como conteúdo não confiável. JWT sozinho não resolvia logout e revogação. E até uma variável de ambiente com o tipo errado fez o Ollama rejeitar todas as requisições com HTTP 400.
+**Inscrição para o beta:**  
+*LINK_DO_GOOGLE_FORMS*
 
-Cada falha virou uma regra, um teste ou um controle.
+Também atualizei o meu engineering showcase, porque o projeto mudou bastante desde a última vez que publiquei sobre ele: frontend completo, autenticação e recuperação de conta, mais testes automatizados, privacidade, backups, hardening e preparação para produção, além da migração da integração do WhatsApp para a API oficial.
 
-Hoje o projeto já envolve FastAPI, PostgreSQL, Alembic, Docker, Ollama/Qwen3, WAHA, structured outputs, fila/worker, autenticação com sessões revogáveis, refresh token rotativo, rate limiting, validação de uploads, backups e um threat model que continua evoluindo.
-
-O aprendizado que mais me marcou foi este:
-
-**segurança não entrou como uma checklist no final. Ela apareceu toda vez que uma suposição sobre o sistema quebrou.**
-
-“E se a mensagem chegar duas vezes?”
-
-“E se esse identificador não for um telefone?”
-
-“E se a IA estiver confiante e errada?”
-
-“E se um token roubado for reutilizado?”
-
-“E se o arquivo não for aquilo que a extensão diz?”
-
-Esse é exatamente o tipo de raciocínio que quero aprofundar profissionalmente em **Application Security e Threat Hunting**.
-
-O desenvolvimento é **assistido por IA**. Uso o ChatGPT como apoio de implementação, arquitetura, debugging e documentação. Requisitos, decisões de produto, execução dos testes, reprodução dos bugs e validação final das mudanças continuam sendo conduzidos por mim. E várias vezes os testes provaram que uma solução aparentemente correta precisava ser refeita — o que, para mim, é uma das partes mais valiosas do processo.
-
-Como o NautilusBook pode se tornar um produto comercial, o core permanece privado. Em vez de abrir o SaaS inteiro, publiquei um **engineering & security showcase** com arquitetura, threat model, decisões de AppSec, estratégia de testes e aprendizados técnicos.
-
+**Showcase técnico:**  
 https://github.com/lucaserre/nautilusbook_showcase
 
-Se você trabalha com AppSec, segurança ofensiva/defensiva ou engenharia de software, tenho uma pergunta:
+O beta será liberado de forma gradual para os primeiros participantes.
 
-**qual seria a primeira coisa que você tentaria quebrar nessa arquitetura?**
+Se conhecer alguém que goste de livros e possa ter interesse, compartilhar também ajuda bastante.
 
-#ApplicationSecurity #CyberSecurity #AppSec #ThreatHunting #Python #FastAPI #Docker #PostgreSQL #LLMSecurity #ThreatModeling
+#Leitura #Livros #BookJournal #Pelagium #DesenvolvimentoDeSoftware #BetaTesting
