@@ -1,6 +1,6 @@
 # Threat Model
 
-This is a practical threat model for the current NautilusBook architecture. It is not a formal certification and will evolve with the frontend and production environment.
+This is a practical threat model for the current Pelagium architecture. It is not a formal certification and will evolve with the frontend and production environment.
 
 ## Protected assets
 
