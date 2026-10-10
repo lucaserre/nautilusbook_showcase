@@ -1,6 +1,6 @@
 # Public Disclosure Boundary
 
-NautilusBook is intended to become a commercial product. This public repository therefore documents engineering decisions without publishing the complete implementation.
+Pelagium is intended to become a commercial product. This public repository therefore documents engineering decisions without publishing the complete implementation.
 
 ## Public here
 
@@ -37,4 +37,4 @@ The goals are separate:
 - **security:** controls should remain effective even when architecture is understood;
 - **commercial exclusivity:** the private implementation and product differentiation do not need to be given away to demonstrate engineering competence.
 
-This repository is therefore a case study, not an open-source distribution of NautilusBook.
+This repository is therefore a case study, not an open-source distribution of Pelagium.
