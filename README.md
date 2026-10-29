@@ -1,155 +1,76 @@
-# NautilusBook — Engineering & Security Showcase
+# Pelagium — Engineering & Security Showcase
 
-> A security-conscious, self-hosted book journal that can be updated through natural-language conversations on WhatsApp using a local LLM.
+> A personal reading journal with a web experience, a conversational roadmap and an offline-first desktop distribution track.
 
-**Status:** active development · private commercial product · public engineering case study
+**Status (28 October 2026):** active development · private commercial application · public engineering case study · **no public desktop installer or production SaaS release yet**.
 
-This repository is **not** the NautilusBook product source code. It is a public showcase of the architecture, security decisions, threat model, engineering lessons, and validation strategy behind the project.
+**Pelagium** is the current product name; *NautilusBook* remains the historical repository name. This repository does **not** contain the private product implementation or an installable application.
 
-The private product is being developed as a potential SaaS. The purpose of this repository is to document the engineering work without publishing the commercial core.
+## Product vision
 
-## Why NautilusBook exists
+Pelagium helps readers organize books, notes, reading progress, rereads, statistics, covers and a customizable journal. Two complementary ways to use the product are being developed:
 
-The original idea was simple: keep a personal reading journal and update it naturally through WhatsApp.
+| Experience | Goal | Current boundary |
+|---|---|---|
+| Online web application | Access a personal journal in a browser, with account-level isolation | Web application implemented and exercised in local tests; public beta deployment and security gates pending |
+| Offline desktop application | Download, install and use the journal on a personal Windows computer, without a domain, VPS, Docker or command-line setup | **Design and feasibility assessment (DESKTOP-1)**; no standalone installer has been released |
 
-A user should be able to write things such as:
+WhatsApp and natural-language assistance are additional integration tracks. They are **not prerequisites** for the core offline reading journal.
 
-- “I started reading Dune today.”
-- “I’m on page 120.”
-- “I finished it. Rating: 5/5.”
-- “What did I write about Dune?”
+## What has been demonstrated
 
-Turning that into a reliable system quickly became more than an LLM integration. The project had to deal with webhook authenticity, retries, idempotency, identity resolution, conversational ambiguity, asynchronous processing, authorization, session revocation, file-upload security, data lifecycle, backups, and deployment hardening.
+During private development, isolated local laboratories have tested encrypted backup/restore, media preservation, reproducible source transfer, local Docker image transfer and an offline journal recovery. The **OFFLINE-4c3** local integrity and persistence checks were reported as completed on 28 October 2026. A four-image import was also confirmed on a second physical Windows computer; a complete end-user, Docker-free installer **has not** been demonstrated.
 
-That evolution is the main subject of this repository.
+These are **private laboratory results**, not claims of a general-public release, independent security certification or deployment readiness. Historical test counts elsewhere in the documentation refer to specific earlier snapshots, not an all-time global test total.
 
-## Architecture at a glance
+## Architectural boundaries
 
 ```mermaid
 flowchart LR
-    U[User] -->|WhatsApp message| W[WAHA]
-    W -->|HMAC-authenticated webhook| API[FastAPI]
-    API --> Q[(Persistent Inbox)]
-    Q --> WK[Worker]
-    WK --> AI[Ollama / Qwen3]
-    AI -->|Structured plan| V[Validation + Domain Rules]
-    V --> DB[(PostgreSQL)]
-    V --> W
+    WEB[Web browser / React] --> API[FastAPI domain API]
+    API --> DB[(PostgreSQL)]
+    API --> MEDIA[(Local media)]
 
-    WEB[Future Web Frontend] -->|Structured API| API
-    API --> DB
+    MSG[Optional WhatsApp] --> INBOX[Authenticated inbox + worker]
+    INBOX --> NLP[Optional local AI]
+    NLP --> RULES[Deterministic validation]
+    RULES --> API
 
-    API --> MEDIA[(Self-hosted Media Storage)]
+    DESKTOP[Planned desktop window] --> LOCAL[Planned bundled local runtime]
+    LOCAL --> DATA[(Local journal + media)]
 ```
 
-The LLM is **not** treated as an authority. Natural-language output is converted into a structured plan, normalized, validated, and only then passed to domain services.
+The web system already has an application API and persistent journal. The desktop branch is **proposed architecture**, not shipped code. Backend packaging and the embedded database choice are being assessed; the existing PostgreSQL laboratory stack must not be mistaken for a user-facing installer.
 
-## Security-oriented design
+Natural-language model output is never the authority for a database mutation: structured interpretation is normalized and validated by domain rules. Optional messaging/AI services must not prevent local core functions from starting.
 
-Selected controls implemented during development include:
+## Security and continuity
 
-- HMAC-authenticated WhatsApp webhooks;
-- idempotent webhook processing and persistent inbox state;
-- asynchronous worker instead of long-running webhook execution;
-- chat-level leases to avoid concurrent processing of the same conversation;
-- separation of WhatsApp LID identity from phone numbers;
-- structured LLM outputs with deterministic post-validation;
-- explicit ambiguity handling instead of silently changing the wrong book;
-- access tokens + rotating refresh tokens + revocable sessions;
-- refresh-token replay detection;
-- Argon2 password hashing and rehash support;
-- login/token request throttling;
-- per-user authorization boundaries;
-- image validation, re-encoding and metadata removal;
-- self-hosted media storage abstraction;
-- account export and deletion workflows;
-- data-retention jobs;
-- backup verification and restore tooling;
-- non-root application containers;
-- local-only administrative ports in development;
-- production profile with reverse proxy, HTTPS, request limits and internal-only services.
+Engineering controls covered in private development include authentication and session revocation, per-user authorization, webhook HMAC checks, durable idempotent inbox processing, media validation, encrypted backups, integrity manifests, recovery rehearsals and production-oriented network hardening.
 
-See [Threat Model](docs/threat-model.md) and [Security Decisions](docs/security-decisions.md).
+Before inviting external testers, the online service still needs actual HTTPS/DNS/SMTP, completed legal documentation, a secured host, off-host encrypted backups, restore drills and multi-user security testing. A desktop release additionally needs code-signing assessment, verified offline dependencies, a one-click installer, automatic local runtime lifecycle, update/rollback safety, data migration and a clean-Windows installation test.
 
-## What was learned by breaking it
+The intended user experience is **download → install → open → read**, with no requirement to manage Docker or PostgreSQL.
 
-Several important controls exist because tests exposed real failure modes during development:
+## Engineering material
 
-| Failure observed | Engineering response |
-|---|---|
-| Duplicate WAHA webhook configuration caused repeated deliveries | Removed duplicate source, preserved idempotent processing |
-| WhatsApp `@lid` was initially treated like a phone number | Split messaging identity from resolved phone identity |
-| Retries could duplicate journal writes | Persisted external message identity + idempotency |
-| The LLM sometimes applied an update to the previously active book | Explicit-title precedence + deterministic catalog resolution |
-| One message could describe changes to two books | Replaced single intent with a multi-operation structured plan |
-| Bursts of messages produced fragmented replies | Persistent queue + debounce + deferred consolidated response |
-| `want_to_read` could coexist with actual progress | Domain invariants enforced in service, API and database |
-| A configuration value serialized with the wrong JSON type caused Ollama HTTP 400 responses | Typed normalization + regression test |
-
-More detail: [Engineering Lessons](docs/engineering-lessons.md).
-
-## Validation snapshot
-
-At the milestone represented by this showcase:
-
-- **76 automated tests** passed in the development stack;
-- the real Ollama multi-book/partial-title probe completed **5/5 scenarios**;
-- database migrations were validated against PostgreSQL;
-- pre-migration integrity checks and a verified backup were executed before domain-changing migrations;
-- data-integrity checks passed after migration;
-- a production-oriented hardening profile exists, but public production deployment is **not claimed as complete**.
-
-This repository intentionally avoids claims such as “production-ready” or “100% secure”. The remaining operational work is documented in [Project Status](docs/project-status.md).
-
-## Technology stack
-
-| Area | Technology |
-|---|---|
-| API | Python, FastAPI, Pydantic |
-| Persistence | PostgreSQL, SQLAlchemy, Alembic |
-| Local LLM | Ollama + Qwen3 |
-| Messaging | WhatsApp via WAHA |
-| Async processing | PostgreSQL-backed inbox + worker |
-| Authentication | JWT access tokens, rotating refresh tokens, revocable sessions |
-| Password hashing | Argon2 |
-| Media | Validated/re-encoded WebP stored on self-hosted filesystem abstraction |
-| Containers | Docker Compose |
-| Reverse proxy / TLS profile | Caddy |
-| Testing | Pytest + integration probes |
-
-## Documentation map
-
+- [Current status and milestones](docs/project-status.md)
+- [Desktop distribution roadmap](docs/desktop-roadmap.md)
 - [Architecture](docs/architecture.md)
-- [Threat Model](docs/threat-model.md)
-- [Security Decisions](docs/security-decisions.md)
-- [Security Testing Strategy](docs/security-testing.md)
-- [Engineering Lessons](docs/engineering-lessons.md)
-- [AI-Assisted Development](docs/ai-assisted-development.md)
-- [Privacy & Data Lifecycle](docs/privacy-data-lifecycle.md)
-- [Self-Hosted Deployment Model](docs/self-hosted-deployment.md)
-- [Project Status & Roadmap](docs/project-status.md)
-- [Public Disclosure Boundary](docs/public-disclosure-boundary.md)
-- [GitHub Publication Checklist](docs/github-publication-checklist.md)
-- [Screenshot Guide](docs/screenshot-guide.md)
+- [Self-hosted and offline boundaries](docs/self-hosted-deployment.md)
+- [Threat model](docs/threat-model.md)
+- [Security decisions](docs/security-decisions.md)
+- [Engineering lessons](docs/engineering-lessons.md)
+- [Public disclosure boundary](docs/public-disclosure-boundary.md)
 
-## AI-assisted development disclosure
+## Disclosure and licensing
 
-NautilusBook has been developed with extensive AI assistance for implementation, architecture review, debugging, test generation, and documentation.
+This is a **documentation/portfolio repository**, not an open-source release of the commercial product. Source code, private prompts, credentials, user data, database dumps, restore keys and deployment values are intentionally excluded. See [NOTICE](NOTICE.md).
 
-Product direction, requirements, acceptance criteria, real-environment testing, security decisions, bug reproduction, and final validation are human-directed. Generated code and suggestions are treated as untrusted until tested and reviewed.
-
-See [AI-Assisted Development](docs/ai-assisted-development.md).
-
-## Repository scope and licensing
-
-This is a **portfolio/documentation repository**, not an open-source release of the NautilusBook commercial product.
-
-The private application source, production configuration, credentials, user data, prompts, database dumps, WhatsApp sessions and deployment secrets are intentionally excluded.
-
-No open-source license for the private NautilusBook product is granted by this repository. See [NOTICE.md](NOTICE.md).
+AI-assisted development has been used for implementation and documentation. Human-directed requirements, tests and real-environment validation remain separate from generated suggestions.
 
 ## Português — resumo
 
-O NautilusBook é um book journal self-hosted em desenvolvimento, com integração via WhatsApp e IA local. Este repositório público documenta arquitetura, threat modeling, decisões de AppSec, testes e aprendizados do projeto, mas **não contém o código-fonte comercial do SaaS**.
+O **Pelagium** é um diário de leitura com biblioteca, notas, progresso, releituras, estatísticas e journal personalizável. O núcleo web já foi desenvolvido e testado em ambiente local. A distribuição **desktop sem Docker, servidor ou domínio** está em fase de arquitetura (DESKTOP-1): **ainda não existe um instalador público pronto**.
 
-A proposta do showcase é demonstrar processo de engenharia e segurança sem abrir o core do produto.
+O showcase divulga decisões de engenharia, segurança e aprendizados sem expor o código-fonte comercial, dados de leitores ou segredos. O beta online e a distribuição desktop possuem homologações próprias e ainda não foram liberados publicamente.
