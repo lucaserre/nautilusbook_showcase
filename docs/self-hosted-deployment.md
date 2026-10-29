@@ -1,60 +1,52 @@
-# Self-Hosted Deployment Model
+# Self-hosted and Offline Deployment Boundaries
 
-NautilusBook is intentionally designed so that the product does not require AWS, GCloud or paid object storage.
+Pelagium supports the goal of reader control over personal data. There are **two distinct deployment tracks**.
 
-This document describes the intended model at a high level. It is not a copy of the private production configuration.
+## Online web service (not publicly released)
 
-## Development
+```mermaid
+flowchart LR
+    USER[Browser] --> TLS[Caddy / HTTPS]
+    TLS --> WEB[React frontend]
+    TLS --> API[FastAPI]
+    API --> DB[(PostgreSQL)]
+    API --> MEDIA[(Persistent media)]
+```
 
-The current development environment runs through Docker Compose on a local machine.
+The online topology requires secure host provisioning, DNS/TLS, private service networks, account isolation, SMTP verification, monitoring, off-host backups, restore drills and reviewed legal documentation. Optional WhatsApp and AI components may require additional infrastructure and should not block the core web journal after the corresponding configuration work is complete.
 
-Administrative services are reachable only through loopback bindings (`127.0.0.1`) rather than all network interfaces.
+The existing production-oriented Compose profile is **not itself proof** of a live, secured VPS deployment.
 
-## Future production topology
+## Technical offline laboratory — already exercised
+
+Separate Windows Docker projects have been used to rehearse local journal functions, verified archives, encrypted recovery, OCI image transport and persistence checks. These steps demonstrate technical feasibility for a server-independent local journal but require Docker and administrative steps inappropriate for nontechnical readers.
+
+They are not the proposed distribution path for the desktop product.
+
+## Planned personal desktop product — not yet shipped
 
 ```mermaid
 flowchart TB
-    NET((Internet)) --> RP[Reverse Proxy / HTTPS]
-    RP --> API[Application API]
-    API --> DB[(PostgreSQL)]
-    API --> MEDIA[(Local / Mounted Media Storage)]
-    WORKER[Worker] --> DB
-    WORKER --> LLM[Ollama]
-    WAHA[WAHA] --> API
+    WIN[Windows app window] --> LOCAL[Bundled local backend]
+    LOCAL --> DATA[(Private on-device journal database)]
+    LOCAL --> FILES[(Private media directory)]
+    BACKUP[User-visible backup / import / export] --> DATA
 ```
 
-Only the public edge should be internet-accessible. Database, LLM and application-internal services remain private to the container/host network.
+Requirements:
 
-## Self-hosted media
+- One installer; no manual Docker, Python, PostgreSQL or server/domain setup.
+- Core features available after disconnecting from the internet.
+- Data and media persist across application restarts and updates; uninstall does not silently destroy the journal.
+- Local backend is not exposed to the LAN or to other users of the computer.
+- Export, import, backup and recovery are understandable to a reader.
+- External search, AI and messaging may need internet but are not startup dependencies.
+- Clean Windows installation and recovery tests are required before public distribution.
 
-Uploaded covers can live on storage owned by the operator, for example a mounted filesystem on a dedicated server.
+The desktop packaging format, local database choice and offline prerequisites are still being assessed in DESKTOP-1. Publishing a self-contained installer is a **future milestone**, not something already available from this showcase.
 
-Required operational controls include:
+## Continuity
 
-- filesystem permissions;
-- storage usage monitoring;
-- backups to a different disk/host;
-- tested restore procedure;
-- deletion integration with account lifecycle.
+Encrypted backups need their decryption key. A lost legacy `age` identity cannot simply be replaced to decrypt the old archive. Where the original journal is still accessible, a fresh portable export may offer a separate migration route, subject to implementation and testing.
 
-## Email
-
-The backend is provider-neutral and can use standard SMTP.
-
-Development does not require a real SMTP server. Public production does, because password-reset and verification links must not be emitted to logs.
-
-Self-hosting mail is possible but introduces deliverability requirements such as SPF, DKIM, DMARC and reverse DNS. That is an operational decision, not an application dependency.
-
-## Production is not claimed yet
-
-The product has a production-oriented deployment profile and security preflight, but a real public deployment still requires:
-
-- Linux host hardening;
-- DNS and TLS validation;
-- SMTP validation;
-- firewall policy;
-- external/off-host backup;
-- restore drill;
-- monitoring and alerting;
-- dependency/container vulnerability review;
-- application-security testing after the frontend exists.
+For further details see [Desktop distribution roadmap](desktop-roadmap.md) and [Project Status](project-status.md).
